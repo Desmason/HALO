@@ -43,6 +43,36 @@ def detect_hardware():
         "os": conf,
     }
 
+# ─── Model Catalog & Helpers ───────────────────────────────────────────────────
+
+# List of candidate models with their parameter counts
+MODEL_CATALOG = [
+
+    # LLaMA-2 family
+    {"name": "LLaMA-2-7B",   "params_b":   7e9},
+    {"name": "LLaMA-2-13B",  "params_b":  13e9},
+    {"name": "LLaMA-2-70B",  "params_b":  70e9},
+
+    # OPT family
+    {"name": "OPT-125M",     "params_b": 0.125e9},
+    {"name": "OPT-350M",     "params_b": 0.350e9},
+    {"name": "OPT-1.3B",     "params_b":   1.3e9},
+    {"name": "OPT-2.7B",     "params_b":   2.7e9},
+    {"name": "OPT-6.7B",     "params_b":   6.7e9},
+    {"name": "OPT-13B",      "params_b":  13e9},
+    {"name": "OPT-30B",      "params_b":  30e9},
+    {"name": "OPT-66B",      "params_b":  66e9},
+    {"name": "OPT-175B",     "params_b": 175e9},
+]
+
+
+BYTES_PER_PARAM = {
+    "fp16": 2.0,
+    "int8": 1.0,
+    "int4": 0.5,
+}
+
+
 # at the bottom of hardware_recommend.py
 
 if __name__ == "__main__":
