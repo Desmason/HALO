@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+"""
+hardware_recommend.py
+
+1) Detect local hardware (CPU, RAM, GPU).
+2) Recommend the best LLaMA/OPT model (static catalog).
+3) Optionally assess any extra HF repo (public or private) via your HF token.
+"""
+
 import os
 import platform
 import psutil
@@ -5,7 +14,7 @@ from huggingface_hub import HfApi
 from huggingface_hub.utils import HfHubHTTPError
 
 # ─── USER-PROVIDED HF TOKEN ────────────────────────────────────────────────────
-HF_TOKEN = "YOUR PASS HF TOKEN HERE"   # ← replace with your Hugging Face token
+HF_TOKEN = "YOUR PASS HF TOKEN HERE"  # ← replace with your Hugging Face token
 
 # ─── Optional GPU detection (torch) ────────────────────────────────────────────
 try:
