@@ -5,7 +5,7 @@ from huggingface_hub import HfApi
 from huggingface_hub.utils import HfHubHTTPError
 
 # ─── USER-PROVIDED HF TOKEN ────────────────────────────────────────────────────
-HF_TOKEN = "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"   # ← replace with your Hugging Face token
+HF_TOKEN = "YOUR PASS HF TOKEN HERE"   # ← replace with your Hugging Face token
 
 # ─── Optional GPU detection (torch) ────────────────────────────────────────────
 try:
