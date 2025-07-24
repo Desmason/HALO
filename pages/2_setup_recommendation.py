@@ -45,7 +45,7 @@ if st.button("🔍 Run Hardware Recommendation"):
         for line in output.splitlines():
             if "Recommended for inference" in line:
                 st.session_state.auto_model_infer = line.split(":")[-1].strip()
-            if "Recommended for QLoRA tuning" in line:
+            if "Recommended for LoRA tuning" in line:
                 st.session_state.auto_model_ft = line.split(":")[-1].strip()
 
 if st.session_state.auto_model_infer:

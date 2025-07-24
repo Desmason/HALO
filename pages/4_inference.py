@@ -1,74 +1,40 @@
-import streamlit as st
-import random
 import os
+import streamlit as st
 
 st.set_page_config(page_title="Step 4 – Inference", layout="centered")
-st.title("🤖 Step 4: AI Chatbot Inference")
+st.title("🤖 Step 4: Run Inference")
 
-# ─── Fallback Defaults if Coming From Checkpoint Upload ───────
-if "model_name" not in st.session_state:
-    st.session_state.model_name = "user-uploaded-checkpoint"
-if "precision_choice" not in st.session_state:
-    st.session_state.precision_choice = "INT4"
-if "feedback_log" not in st.session_state:
-    st.session_state.feedback_log = []
+if "model_name" not in st.session_state or "precision_choice" not in st.session_state:
+    st.warning("Model not selected. Please go back to Step 3.")
+    st.stop()
 
+model_name = st.session_state.model_name
+precision = st.session_state.precision_choice
 
-# ─── Model Checkpoint Upload ─────────────────────────
-st.subheader("📦 Upload Your Fine-Tuned Model Checkpoint")
-model_file = st.file_uploader("Upload model checkpoint (e.g., .bin, .pt, .safetensors)", type=["bin", "pt", "safetensors"])
+st.markdown(f"**Model Selected:** `{model_name}`")
+st.markdown(f"**Precision Mode:** `{precision}`")
 
-if model_file:
-    model_path = os.path.join("temp_models", model_file.name)
-    os.makedirs("temp_models", exist_ok=True)
-    with open(model_path, "wb") as f:
-        f.write(model_file.read())
-    st.success(f"✅ Checkpoint uploaded to `{model_path}` (simulation only)")
-    st.session_state.model_checkpoint_path = model_path
+# ─── Upload Model Checkpoint (.gguf or LoRA) ─────────────────────────────
+st.markdown("### Upload Your GGUF or LoRA Checkpoint")
+checkpoint_file = st.file_uploader("Upload model checkpoint file", type=["gguf", "bin", "safetensors"], key="checkpoint")
 
-# ─── Show Model Details ─────────────────────────────
-st.markdown(f"**Model in use:** `{st.session_state.model_name}`")
-st.markdown(f"**Quantization:** `{st.session_state.precision_choice}`")
+# ─── Input Prompt ────────────────────────────────────────────────────────
+user_input = st.text_area("Enter your input prompt", height=200)
 
-# ─── Chat History ───────────────────────────────────
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-
-for msg in st.session_state.chat_history:
-    st.chat_message(msg["role"]).write(msg["content"])
-
-# ─── Chat Input Box ─────────────────────────────────
-user_input = st.chat_input("Ask your model something...")
-if user_input:
-    st.chat_message("user").write(user_input)
-
-    confidence = random.uniform(0.4, 0.95)
-    threshold = st.session_state.get("threshold", 0.7)
-
-    if confidence < threshold:
-        reply = f"🔁 Fallback (Big Model): Response to '{user_input}'"
-        used_big = True
+# ─── Dummy Inference (Replace with llama.cpp later) ──────────────────────
+if st.button("🔍 Run Inference"):
+    if checkpoint_file is None:
+        st.warning("Please upload a model checkpoint file first.")
+    elif not user_input.strip():
+        st.warning("Please enter a prompt.")
     else:
-        reply = f"✅ Local Model: Response to '{user_input}'"
-        used_big = False
+        st.info("Running inference...")
 
-    st.chat_message("assistant").write(reply)
+        # Placeholder result
+        result = f"[Placeholder Output]\nModel: {model_name}\nPrecision: {precision}\nPrompt: {user_input}"
+        st.success("✅ Inference complete!")
+        st.code(result, language="text")
 
-    st.session_state.chat_history.append({"role": "user", "content": user_input})
-    st.session_state.chat_history.append({"role": "assistant", "content": reply})
-
-    st.session_state.feedback_log.append({
-        "query": user_input,
-        "answer": reply,
-        "confidence": confidence,
-        "used_big_model": used_big,
-        "rating": "pending"
-    })
-
-# ─── Threshold Control ──────────────────────────────
-with st.expander("⚙️ Inference Settings"):
-    st.session_state.threshold = st.slider("Confidence Threshold", 0.0, 1.0, st.session_state.get("threshold", 0.7))
-
-# ─── Back Navigation ────────────────────────────────
+# ─── Back Navigation ──────────────────────────────────────────────────────
 if st.button("⬅️ Back to Model Selection"):
     st.switch_page("pages/3_model_selection.py")

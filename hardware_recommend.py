@@ -66,7 +66,7 @@ def get_model_bytes(repo_id: str, token: str) -> int | None:
 
     total = 0
     for path in files:
-        if path.endswith((".bin", ".safetensors")):
+        if path.endswith((".bin", ".safetensors", ".gguf")):
             try:
                 infos = _hf_api.get_paths_info(repo_id, [path], use_auth_token=token)
                 for info in infos:
@@ -89,7 +89,7 @@ def assess_fit(name: str, bytes_fp16: int, specs: dict, fine_tuning: bool = Fals
 
     gb_fp16 = bytes_to_gb(bytes_fp16)
     print(f"🔍 Assessing {name} (~{gb_fp16:.1f} GB FP16) [{mode}]:")
-    for label, gb in [("FP16", gb_fp16), ("INT8", gb_fp16 / 2), ("INT4", gb_fp16 / 4)]:
+    for label, gb in [("FP16", gb_fp16), ("INT4", gb_fp16 / 4)]:
         status = "fits ✅" if gb <= budget else "too big ❌"
         print(f"  {label:<4s}: {gb:6.2f} GB → {status}")
     print()
@@ -118,8 +118,8 @@ def main():
     def pick_model(budget: float):
         for name, b in catalog:
             gb_fp16 = bytes_to_gb(b)
-            for prec in ("fp16", "int8", "int4"):
-                req = gb_fp16 / (2 if prec == "int8" else 4 if prec == "int4" else 1)
+            for prec in ("fp16", "int4"):
+                req = gb_fp16 / (4 if prec == "int4" else 1)
                 if req <= budget:
                     return name, prec, req
         # fallback to smallest

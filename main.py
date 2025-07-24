@@ -14,7 +14,10 @@ Choose how you'd like to begin:
 """)
 
 # Optional: Let user specify checkpoint quantization
-precision = st.selectbox("Select Precision for Your Uploaded Model", ["FP16", "INT8", "INT4"], index=2)
+quant_options = ["FP16", "INT4"]
+default_index = 1 if len(quant_options) > 1 else 0
+precision = st.selectbox("Select Precision for Your Uploaded Model", quant_options, index=default_index)
+
 
 col1, col2 = st.columns(2)
 

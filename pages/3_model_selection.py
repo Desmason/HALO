@@ -16,7 +16,8 @@ user_model_infer = ""
 if not use_auto_infer:
     user_model_infer = st.text_input("Enter a model name for inference")
 
-precision_infer = st.selectbox("Select Quantization for Inference", ["FP16", "INT8", "INT4"])
+# 🔧 Limited to FP16 and INT4 only
+precision_infer = st.selectbox("Select Quantization for Inference", ["FP16", "INT4"])
 
 if st.button("🚀 Proceed to Inference"):
     st.session_state.model_name = user_model_infer.strip() if not use_auto_infer else st.session_state.auto_model_infer
@@ -33,7 +34,8 @@ user_model_ft = ""
 if not use_auto_ft:
     user_model_ft = st.text_input("Enter a model name for fine-tuning")
 
-precision_ft = st.selectbox("Select Quantization for Fine-Tuning", ["FP16", "INT8", "INT4"], key="ft_precision")
+# 🔧 Limited to FP16 and INT4 only
+precision_ft = st.selectbox("Select Quantization for Fine-Tuning", ["FP16", "INT4"], key="ft_precision")
 
 if st.button("🧪 Start Fine-Tuning"):
     st.session_state.model_name = user_model_ft.strip() if not use_auto_ft else st.session_state.auto_model_ft
