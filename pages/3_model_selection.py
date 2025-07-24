@@ -1,4 +1,5 @@
 import streamlit as st
+from gguf_download import download_and_convert_to_gguf
 
 st.set_page_config(page_title="Step 3 – Model Selection", layout="centered")
 st.title("📦 Step 3: Choose Model Usage Mode")
@@ -23,7 +24,19 @@ if st.button("🚀 Proceed to Inference"):
     st.session_state.model_name = user_model_infer.strip() if not use_auto_infer else st.session_state.auto_model_infer
     st.session_state.precision_choice = precision_infer
     st.success(f"Model `{st.session_state.model_name}` selected with {precision_infer} quantization.")
-    st.switch_page("pages/4_inference.py")
+
+    with st.spinner("Downloading and converting to GGUF..."):
+        out_path = download_and_convert_to_gguf(
+            model_repo=st.session_state.model_name,
+            quant=st.session_state.precision_choice.lower(),
+            hf_token=st.secrets["HF_TOKEN"] if "HF_TOKEN" in st.secrets else None
+        )
+        if out_path:
+            st.session_state.gguf_path = out_path
+            st.success(f"GGUF model ready at: {out_path}")
+            st.switch_page("pages/4_inference.py")
+        else:
+            st.error("Failed to download or convert the model to GGUF.")
 
 st.markdown("---")
 
