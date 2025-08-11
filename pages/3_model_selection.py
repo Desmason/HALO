@@ -17,7 +17,7 @@ user_model_infer = ""
 if not use_auto_infer:
     user_model_infer = st.text_input("Enter a model name for inference")
 
-# 🔧 Limited to FP16 and INT4 only
+# Precision choice
 precision_infer = st.selectbox("Select Quantization for Inference", ["FP16", "INT4"])
 
 if st.button("🚀 Proceed to Inference"):
@@ -25,18 +25,23 @@ if st.button("🚀 Proceed to Inference"):
     st.session_state.precision_choice = precision_infer
     st.success(f"Model `{st.session_state.model_name}` selected with {precision_infer} quantization.")
 
-    with st.spinner("Downloading and converting to GGUF..."):
+    with st.spinner("Downloading, converting, and quantizing if needed..."):
+        hf_token = st.session_state.get("hf_token", None)
+
+        # NEW: Map UI choice to function param
+        quant_arg = "fp16" if precision_infer.upper() == "FP16" else "int4"
+
         out_path = download_and_convert_to_gguf(
             model_repo=st.session_state.model_name,
-            quant=st.session_state.precision_choice.lower(),
-            hf_token=st.secrets["HF_TOKEN"] if "HF_TOKEN" in st.secrets else None
+            quant=quant_arg,
+            hf_token=hf_token
         )
         if out_path:
             st.session_state.gguf_path = out_path
             st.success(f"GGUF model ready at: {out_path}")
             st.switch_page("pages/4_inference.py")
         else:
-            st.error("Failed to download or convert the model to GGUF.")
+            st.error("Failed to prepare the GGUF model.")
 
 st.markdown("---")
 
@@ -47,7 +52,6 @@ user_model_ft = ""
 if not use_auto_ft:
     user_model_ft = st.text_input("Enter a model name for fine-tuning")
 
-# 🔧 Limited to FP16 and INT4 only
 precision_ft = st.selectbox("Select Quantization for Fine-Tuning", ["FP16", "INT4"], key="ft_precision")
 
 if st.button("🧪 Start Fine-Tuning"):

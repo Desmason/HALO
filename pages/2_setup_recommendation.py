@@ -1,6 +1,7 @@
 import os
 import subprocess
 import streamlit as st
+from hardware_recommend import MODEL_CATALOG
 
 st.set_page_config(page_title="Step 2 – Setup & Hardware Recommendation", layout="centered")
 st.title("🛠️ Step 2: Upload Documents & Hardware Recommendation")
@@ -15,6 +16,9 @@ if "auto_model_infer" not in st.session_state:
 if "auto_model_ft" not in st.session_state:
     st.session_state.auto_model_ft = ""
 
+# ─── Repo Mapping ─────────────────────────────────────
+REPO_MAP = {m["name"]: m["repo_id"] for m in MODEL_CATALOG}
+
 # ─── UI ────────────────────────────────────────────────
 st.markdown("Upload one or more documents and run hardware detection to get model suggestions.")
 
@@ -23,6 +27,8 @@ if uploaded_files:
     st.session_state.uploaded_files = uploaded_files
 
 hf_token = st.text_input("Hugging Face Access Token", type="password")
+st.session_state.hf_token = hf_token.strip()
+
 user_model = st.text_input("Optional: Hugging Face Model Name (e.g. Qwen/Qwen3-32B)")
 
 if st.button("🔍 Run Hardware Recommendation"):
@@ -44,9 +50,11 @@ if st.button("🔍 Run Hardware Recommendation"):
 
         for line in output.splitlines():
             if "Recommended for inference" in line:
-                st.session_state.auto_model_infer = line.split(":")[-1].strip()
-            if "Recommended for LoRA tuning" in line:
-                st.session_state.auto_model_ft = line.split(":")[-1].strip()
+                model_label = line.split(":")[-1].strip().split("@")[0].strip()
+                st.session_state.auto_model_infer = REPO_MAP.get(model_label, model_label)
+            if "Recommended for QLoRA tuning" in line or "Recommended for LoRA tuning" in line:
+                model_label = line.split(":")[-1].strip().split("@")[0].strip()
+                st.session_state.auto_model_ft = REPO_MAP.get(model_label, model_label)
 
 if st.session_state.auto_model_infer:
     st.success(f"Auto-Recommended for Inference: {st.session_state.auto_model_infer}")

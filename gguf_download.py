@@ -1,41 +1,66 @@
 import os
 import subprocess
 from huggingface_hub import snapshot_download
+from pathlib import Path
 
 def download_and_convert_to_gguf(model_repo: str, quant: str, hf_token: str = None, out_dir: str = "converted"):
     """
-    Downloads a Hugging Face model and converts it to GGUF format using llama.cpp's convert_hf_to_gguf.py
-
-    Args:
-        model_repo (str): e.g. "meta-llama/Llama-2-7b-hf"
-        quant (str): "fp16" or "int4" (will use q4_k_m internally)
-        hf_token (str, optional): Hugging Face access token
-        out_dir (str): directory where gguf file will be saved
-
-    Returns:
-        str: path to the generated GGUF file or None if failed
+    Downloads a Hugging Face model, converts to GGUF (FP16), and if requested,
+    quantizes to INT4 (q4_k_m) using llama.cpp's llama-quantize tool.
     """
     assert quant in ("fp16", "int4"), "Only fp16 and int4 supported"
-    outtype = "f16" if quant == "fp16" else "q4_k_m"
+    is_int4 = (quant == "int4")
 
-    print(f"📥 Downloading model: {model_repo} ...")
-    model_path = snapshot_download(repo_id=model_repo, token=hf_token, local_dir=os.path.join("hf_models", model_repo.replace('/', '_')))
+    # Always start from FP16
+    outtype = "f16"
 
-    os.makedirs(out_dir, exist_ok=True)
-    output_file = os.path.join(out_dir, f"{model_repo.replace('/', '_')}.{outtype}.gguf")
+    # Download model snapshot from Hugging Face
+    print(f"📥 Downloading model from Hugging Face: {model_repo}")
+    model_dir = snapshot_download(
+        repo_id=model_repo,
+        token=hf_token,
+        allow_patterns=["*.bin", "*.safetensors", "*.json"],
+        local_dir=os.path.join("hf_models", model_repo.replace('/', '_')),
+        local_dir_use_symlinks=False
+    )
 
-    cmd = [
-        "python3", "convert_hf_to_gguf.py",  # llama.cpp's HF conversion script
-        "--outfile", output_file,
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+
+    fp16_path = os.path.join(out_dir, f"{model_repo.replace('/', '_')}.f16.gguf")
+
+    # Step 1: Convert to GGUF FP16
+    cmd_convert = [
+        "python3", "convert_hf_to_gguf.py",
+        "--outfile", fp16_path,
         "--outtype", outtype,
-        model_path
+        model_dir
     ]
-
-    print("🚧 Running GGUF conversion...")
+    print("🚧 Running GGUF conversion to FP16...")
+    print(" ".join(cmd_convert))
     try:
-        subprocess.run(cmd, check=True)
-        print(f"✅ GGUF conversion complete: {output_file}")
-        return output_file
+        subprocess.run(cmd_convert, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"❌ GGUF conversion failed: {e}")
+        print("❌ GGUF conversion failed")
         return None
+
+    # Step 2: Quantize to INT4 if requested
+    if is_int4:
+        int4_path = os.path.join(out_dir, f"{model_repo.replace('/', '_')}.q4_k_m.gguf")
+        cmd_quant = [
+            "./llama.cpp/build/bin/llama-quantize",
+            fp16_path,
+            int4_path,
+            "q4_k_m"
+        ]
+        print("🚧 Running llama-quantize to INT4 (q4_k_m)...")
+        print(" ".join(cmd_quant))
+        try:
+            subprocess.run(cmd_quant, check=True)
+            print(f"✅ Quantized model ready at: {int4_path}")
+            return int4_path
+        except subprocess.CalledProcessError:
+            print("❌ Quantization failed")
+            return None
+
+    print(f"✅ FP16 GGUF model ready at: {fp16_path}")
+    return fp16_path

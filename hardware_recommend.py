@@ -39,20 +39,11 @@ def detect_hardware():
 
 # ─── Model Catalog (Static) ─────────────────────────────────────────────────────
 MODEL_CATALOG = [
-    {"name": "LLaMA-3.2-1B",  "repo_id": "meta-llama/Llama-3-2-1b"},
-    {"name": "LLaMA-3.2-3B",  "repo_id": "meta-llama/Llama-3-2-3b"},
-    {"name": "LLaMA-3.1-8B",  "repo_id": "meta-llama/Llama-3-1-8b"},
-    {"name": "LLaMA-3.1-70B", "repo_id": "meta-llama/Llama-3-1-70b"},
-    {"name": "LLaMA-3.1-405B","repo_id": "meta-llama/Llama-3-1-405b"},
-    {"name": "OPT-125M",      "repo_id": "facebook/opt-125m"},
-    {"name": "OPT-350M",      "repo_id": "facebook/opt-350m"},
-    {"name": "OPT-1.3B",      "repo_id": "facebook/opt-1.3b"},
-    {"name": "OPT-2.7B",      "repo_id": "facebook/opt-2.7b"},
-    {"name": "OPT-6.7B",      "repo_id": "facebook/opt-6.7b"},
-    {"name": "OPT-13B",       "repo_id": "facebook/opt-13b"},
-    {"name": "OPT-30B",       "repo_id": "facebook/opt-30b"},
-    {"name": "OPT-66B",       "repo_id": "facebook/opt-66b"},
-    {"name": "OPT-175B",      "repo_id": "facebook/opt-175b"},
+    {"name": "LLaMA-3.2-1B",  "repo_id": "meta-llama/Llama-3.2-1B"},
+    {"name": "LLaMA-3.2-3B",  "repo_id": "meta-llama/Llama-3.2-3B"},
+    {"name": "LLaMA-3.1-8B",  "repo_id": "meta-llama/Llama-3.1-8B"},
+    {"name": "LLaMA-3.3-70B", "repo_id": "meta-llama/Llama-3.3-70B"},
+    {"name": "LLaMA-3.1-405B","repo_id": "meta-llama/Llama-3.1-405B"},
 ]
 
 # ─── Hugging Face File Size Estimation ─────────────────────────────────────────
