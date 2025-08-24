@@ -39,11 +39,10 @@ def detect_hardware():
 
 # ─── Model Catalog (Static) ─────────────────────────────────────────────────────
 MODEL_CATALOG = [
-    {"name": "LLaMA-3.2-1B",  "repo_id": "meta-llama/Llama-3.2-1B"},
-    {"name": "LLaMA-3.2-3B",  "repo_id": "meta-llama/Llama-3.2-3B"},
-    {"name": "LLaMA-3.1-8B",  "repo_id": "meta-llama/Llama-3.1-8B"},
-    {"name": "LLaMA-3.3-70B", "repo_id": "meta-llama/Llama-3.3-70B"},
-    {"name": "LLaMA-3.1-405B","repo_id": "meta-llama/Llama-3.1-405B"},
+    {"name": "LLaMA-3.2-1B",  "repo_id": "meta-llama/Llama-3.2-1B-Instruct"},
+    {"name": "LLaMA-3.2-3B",  "repo_id": "meta-llama/Llama-3.2-3B-Instruct"},
+    {"name": "LLaMA-3.1-8B",  "repo_id": "meta-llama/Llama-3.1-8B-Instruct"},
+    {"name": "LLaMA-3.3-70B", "repo_id": "meta-llama/Llama-3.3-70B-Instruct"},
 ]
 
 # ─── Hugging Face File Size Estimation ─────────────────────────────────────────

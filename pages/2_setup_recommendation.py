@@ -64,5 +64,5 @@ if uploaded_files and hf_token.strip() and st.session_state.auto_model_infer:
     if st.button("➡️ Proceed to Model Selection"):
         st.switch_page("pages/3_model_selection.py")
 
-if st.button("⬅️ Back to Start"):
+if st.button("d⬅️ Back to Start"):
     st.switch_page("main.py")
