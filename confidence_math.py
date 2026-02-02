@@ -82,6 +82,11 @@ def probability_local(c: float, phi: float, s: float = 20.0,
 
 def decide_route(c: float, phi: float, deterministic: bool = True,
                  s: float = 20.0, tau_local: float = 0.45, tau_cloud: float = 0.75) -> str:
+    
+     # 🔥 Absolute privacy override
+    if phi >= 0.999:   # treat 1.0 or 0.999999 as full privacy
+        return "local"
+    
     p_local = probability_local(c, phi, s=s, tau_local=tau_local, tau_cloud=tau_cloud)
     if deterministic:
         return "local" if p_local >= 0.6 else "openai"

@@ -4,9 +4,12 @@ import json
 import time
 from datetime import datetime
 from llama_infer import LlamaInference
-from confidence_math import compute_hybrid_confidence, decide_route,compute_confidence, compute_confidence_entropy
-
-
+from confidence_math import (
+    compute_hybrid_confidence,
+    decide_route,
+    compute_confidence,
+    compute_confidence_entropy,
+)
 
 # =========================
 # ---- LOGGING HELPERS ----
@@ -28,7 +31,7 @@ def log_exchange(user_query: str, response: str):
         "ts": datetime.utcnow().isoformat() + "Z",
         "user_query": user_query,
         "response": response,
-        "rating": 0
+        "rating": 0,
     }
     logs.append(record)
     save_logs(logs)
@@ -64,29 +67,70 @@ def get_openai_response(messages):
 # =========================
 st.title("🧠 HALO Chatbot (Llama.cpp + OpenAI fallback demo)")
 
-# Model path input
-model_path = st.text_input(
-    "Path to your GGUF model",
-    value=st.session_state.get("model_path", "converted/meta-llama_Llama-3.1-8B-Instruct.q4_k_m.gguf")
-)
-st.session_state["model_path"] = model_path
+# ---- Reset session-state button ----
+if st.button("🔄 Reset model paths"):
+    for key in ["base_model_path", "lora_path"]:
+        if key in st.session_state:
+            del st.session_state[key]
+    st.rerun()
 
-if not os.path.exists(model_path):
-    st.warning("⚠️ Model path not found. Please check and try again.")
+# ---- Inference mode ----
+mode = st.radio(
+    "Inference mode",
+    ["Direct base model", "Fine-tuned (base + LoRA)"],
+    horizontal=True,
+)
+
+# Default clean values (only if not set)
+if "base_model_path" not in st.session_state:
+    st.session_state["base_model_path"] = ""
+if "lora_path" not in st.session_state:
+    st.session_state["lora_path"] = ""
+
+# Input fields
+if mode == "Direct base model":
+    base_model_path = st.text_input(
+        "Path to your base GGUF model",
+        value=st.session_state["base_model_path"],
+        key="base_model_path"
+    )
+    lora_path = None
+else:
+    base_model_path = st.text_input(
+        "Base GGUF model path",
+        value=st.session_state["base_model_path"],
+        key="base_model_path"
+    )
+    lora_path = st.text_input(
+        "LoRA GGUF adapter path",
+        value=st.session_state["lora_path"],
+        key="lora_path"
+    )
+
+# ---- Validate base path ----
+if not os.path.exists(base_model_path) or base_model_path.strip() == "":
+    st.warning(f"⚠️ Base model not found:\n`{base_model_path}`")
     st.stop()
 
-# Privacy slider φ
+# ---- Validate LoRA path ----
+if mode == "Fine-tuned (base + LoRA)":
+    if lora_path is None or lora_path.strip() == "" or not os.path.exists(lora_path):
+        st.warning(f"⚠️ LoRA adapter not found:\n`{lora_path}`")
+        st.stop()
+
+# ---- Privacy slider φ ----
 phi_raw = st.slider("Privacy (0 = all OpenAI, 100 = all local)", 0, 100, 50, 5)
 phi = phi_raw / 100.0
 st.session_state["privacy"] = phi
 
+# ---- Load model (cached) ----
 @st.cache_resource
-def load_model(model_path):
-    return LlamaInference(model_path)
+def load_model(base, lora):
+    return LlamaInference(model_path=base, lora_path=lora)
 
-llama = load_model(model_path)
+llama = load_model(base_model_path, lora_path)
 
-# Init session state
+# ---- Initialize chat session ----
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "ratings" not in st.session_state:
@@ -100,68 +144,50 @@ if prompt := st.chat_input("Type your message..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     llama_prompt = build_llama3_prompt(st.session_state.messages)
-    out = llama.infer(
+    llama_response, token_logprobs, top_logprobs = llama.infer(
         llama_prompt,
         max_tokens=256,
         stop=["<|start_header_id|>user<|end_header_id|>"],
-        logprobs_k=5
+        logprobs_k=5,
     )
-    llama_response, token_logprobs, top_logprobs = out
 
-    # Compute hybrid confidence
+    # ---- HALO Confidence Logic ----
     conf_ppl, _ = compute_confidence(token_logprobs)
     conf_ent, _ = compute_confidence_entropy(top_logprobs)
+    hybrid = compute_hybrid_confidence(token_logprobs, top_logprobs)
 
-    c = compute_hybrid_confidence(token_logprobs, top_logprobs)
-
-    # Decide route
-    route = decide_route(c, phi, deterministic=True)
-
+    route = decide_route(hybrid, phi, deterministic=True)
     took_ms = int((time.time() - t0) * 1000)
-
 
     metrics = (
         f"📊 conf_ppl={conf_ppl:.3f} | conf_ent={conf_ent:.3f} | "
-        f"hybrid={c:.3f} | φ={phi:.2f} | route={route} | ⏱️ {took_ms} ms"
+        f"hybrid={hybrid:.3f} | φ={phi:.2f} | route={route} | ⏱️ {took_ms} ms"
     )
 
-
+    # ---- Choose response ----
     if route == "local":
-        provenance = "local"
         final_text = llama_response.strip()
-        response = f"{final_text}\n\n{metrics}"
     else:
-        provenance = "openai_fallback"
         final_text = get_openai_response(st.session_state.messages)
-        response = f"{final_text}\n\n{metrics}"
 
+    response = f"{final_text}\n\n{metrics}"
 
     st.session_state.messages.append({"role": "assistant", "content": response})
     record_idx = log_exchange(prompt, final_text)
     st.session_state.record_ids[len(st.session_state.messages) - 1] = record_idx
 
-    
-    took_ms = int((time.time() - t0) * 1000)
-    '''
-    st.caption(
-    f"🔎 conf_ppl={conf_ppl:.3f} | conf_ent={conf_ent:.3f} | "
-    f"hybrid={c:.3f} | φ={phi:.2f} | route={route} | ⏱️ {took_ms} ms"
-)
-'''
-
-
-# ---- Render chat with thumbs up/down ----
+# ---- Render messages ----
 for idx, msg in enumerate(st.session_state.messages):
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
         if msg["role"] == "assistant":
             col1, col2, col3 = st.columns([1, 1, 8])
             with col1:
-                if st.button("👍", key=f"thumbs_up_{idx}"):
+                if st.button("👍", key=f"up_{idx}"):
                     st.session_state.ratings[idx] = 1
                     update_rating(st.session_state.record_ids[idx], 1)
             with col2:
-                if st.button("👎", key=f"thumbs_down_{idx}"):
+                if st.button("👎", key=f"down_{idx}"):
                     st.session_state.ratings[idx] = -1
                     update_rating(st.session_state.record_ids[idx], -1)
             with col3:

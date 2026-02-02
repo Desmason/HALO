@@ -2,6 +2,7 @@ import os
 import subprocess
 import streamlit as st
 from hardware_recommend import MODEL_CATALOG
+from pathlib import Path
 
 st.set_page_config(page_title="Step 2 – Setup & Hardware Recommendation", layout="centered")
 st.title("🛠️ Step 2: Upload Documents & Hardware Recommendation")
@@ -22,9 +23,30 @@ REPO_MAP = {m["name"]: m["repo_id"] for m in MODEL_CATALOG}
 # ─── UI ────────────────────────────────────────────────
 st.markdown("Upload one or more documents and run hardware detection to get model suggestions.")
 
-uploaded_files = st.file_uploader("Upload Document(s) (PDF, max 10GB total)", type=["pdf"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload Document(s) (PDF, max 10GB total)", type=["txt"], accept_multiple_files=True)
 if uploaded_files:
     st.session_state.uploaded_files = uploaded_files
+    # Combine all uploaded txt files into one train.txt
+    train_dir = Path("train_data")
+    train_dir.mkdir(exist_ok=True)
+    train_path = train_dir / "train.txt"
+
+    with train_path.open("w", encoding="utf-8") as out_f:
+        for uf in uploaded_files:
+            # uf is a Streamlit UploadedFile
+            content = uf.read()
+            try:
+                text = content.decode("utf-8")
+            except AttributeError:
+                # content is already str
+                text = content
+            out_f.write(text)
+            out_f.write("\n")
+
+    # Save path for Step 3 (LoRA fine-tuning)
+    st.session_state.train_data_path = str(train_path)
+    st.success(f"✅ Training data saved to {train_path}")
+
 
 hf_token = st.text_input("Hugging Face Access Token", type="password")
 st.session_state.hf_token = hf_token.strip()
